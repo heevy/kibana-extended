@@ -1,3 +1,9 @@
+heevys's changelog
+================
+
+## terms_tophits panel
+Allows to use different label field for terms panel with usage of TopHitsAggregation.
+
 chenryn's changelog
 ================
 
