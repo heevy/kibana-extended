@@ -1,0 +1,11 @@
+<div ng-controller='deletePanel' ng-init="init()">
+
+    <div ng-style="panel.style" style="display:inline-block;line-height:{{panel.style['font-size']}}" ng-repeat="query in data">
+      <i class="icon-circle" style="color:{{query.info.color}}"></i> {{query.info.alias}} ({{query.hits}})  <a class="link small" confirmed-click="delete_data(query)" 
+    ng-confirm-click="Are you sure you want to delete ({{query.hits}} records ?">
+        Delete Data
+      </a> 
+    </div>
+    <br ng-show="panel.arrangement == 'vertical' && panel.chart == 'list'">
+
+</div>

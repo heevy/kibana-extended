@@ -83,6 +83,7 @@ function (Settings) {
       'timepicker',
       'text',
       'hits',
+      'deletePanel',
       'column',
       'trends',
       'bettermap',
