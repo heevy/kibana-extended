@@ -94,6 +94,14 @@ angular.module('elasticjs.service', ['elasticsearch'])
             id: id
         });
     };
+
+
+    ejs.doDeleteByQuery = function(indices, searchBody) {
+        return esClient.deleteByQuery({
+          index: indices,
+          body: searchBody
+        });
+    };
       
     ejs.getAliases = function(indices) {
         return esClient.indices.getAliases({
