@@ -140,6 +140,30 @@ function (angular, app, _, $, kbn) {
 
     };
 
+    $scope.get_order_column = function(){
+      if($scope.panel.order.indexOf('count')>-1){
+        return '_count';
+      }
+      if($scope.panel.order.indexOf('term')>-1){
+        return '_term';
+      }
+
+    }
+
+    $scope.get_order_type = function(){
+      switch ($scope.panel.order) {
+        case 'count':
+          return 'desc';
+        case 'reverse_count':
+          return 'asc';
+        case 'term':
+          return  'asc';
+        case 'reverse_term':
+          return  'desc';
+      }
+    }
+
+
     $scope.get_data = function() {
       // Make sure we have everything for the request to complete
       if(dashboard.indices.length === 0) {
@@ -180,8 +204,7 @@ function (angular, app, _, $, kbn) {
                 .aggregation($scope.ejs.TermsAggregation('terms')
                   .field($scope.field)
                   .size($scope.panel.size)
-                  //TODO fix
-                  //.order($scope.panel.order)
+                  .order($scope.get_order_column(),$scope.get_order_type())
                   .exclude($scope.panel.exclude)                    
                 )
               ).size(0); 
@@ -281,6 +304,7 @@ function (angular, app, _, $, kbn) {
 
         function build_results() {
           var k = 0;
+          var sum = 0;
           scope.data = [];
           _.each(scope.results.aggregations.terms.terms.buckets, function(v) {
             var slice;
@@ -290,12 +314,15 @@ function (angular, app, _, $, kbn) {
             if(scope.panel.tmode === 'terms_stats') {
               slice = { label : v.key, data : [[k,v[scope.panel.tstat]]], actions: true};
             }
+            sum = sum + slice.data[0][1];
             scope.data.push(slice);
             k = k + 1;
+
           });
-          //TODO Fix
-          // scope.data.push({label:'Missing field',
-          //   data:[[k,scope.results.facets.terms.missing]],meta:"missing",color:'#aaa',opacity:0});
+          sum = sum + scope.results.aggregations.terms.terms.sum_other_doc_count;
+
+           scope.data.push({label:'Missing field',
+             data:[[k,scope.results.aggregations.terms.doc_count-sum]],meta:"missing",color:'#aaa',opacity:0});
 
           if(scope.panel.tmode === 'terms') {
             scope.data.push({label:'Other values',
