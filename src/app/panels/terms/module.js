@@ -168,17 +168,34 @@ function (angular, app, _, $, kbn) {
 
       // Terms mode
       if($scope.panel.tmode === 'terms') {
-        request = request
-          .facet($scope.ejs.TermsFacet('terms')
-          .field($scope.field)
-          .size($scope.panel.size)
-          .order($scope.panel.order)
-          .exclude($scope.panel.exclude)
-          .facetFilter($scope.ejs.QueryFilter(
-            $scope.ejs.FilteredQuery(
-              boolQuery,
-              filterSrv.getBoolFilter(filterSrv.ids())
-            )))).size(0);
+        request = request 
+            .aggregation(
+              $scope.ejs.FilterAggregation('terms')
+                .filter($scope.ejs.QueryFilter(
+                  $scope.ejs.FilteredQuery(
+                    boolQuery,
+                    filterSrv.getBoolFilter(filterSrv.ids())
+                  )
+                ))
+                .aggregation($scope.ejs.TermsAggregation('terms')
+                  .field($scope.field)
+                  .size($scope.panel.size)
+                  //TODO fix
+                  //.order($scope.panel.order)
+                  .exclude($scope.panel.exclude)                    
+                )
+              ).size(0); 
+        // request = request
+        //   .facet($scope.ejs.TermsFacet('terms')
+        //   .field($scope.field)
+        //   .size($scope.panel.size)
+        //   .order($scope.panel.order)
+        //   .exclude($scope.panel.exclude)
+        //   .facetFilter($scope.ejs.QueryFilter(
+        //     $scope.ejs.FilteredQuery(
+        //       boolQuery,
+        //       filterSrv.getBoolFilter(filterSrv.ids())
+        //     )))).size(0);
       }
       if($scope.panel.tmode === 'terms_stats') {
         request = request
@@ -265,24 +282,24 @@ function (angular, app, _, $, kbn) {
         function build_results() {
           var k = 0;
           scope.data = [];
-          _.each(scope.results.facets.terms.terms, function(v) {
+          _.each(scope.results.aggregations.terms.terms.buckets, function(v) {
             var slice;
             if(scope.panel.tmode === 'terms') {
-              slice = { label : v.term, data : [[k,v.count]], actions: true};
+              slice = { label : v.key, data : [[k,v.doc_count]], actions: true};
             }
             if(scope.panel.tmode === 'terms_stats') {
-              slice = { label : v.term, data : [[k,v[scope.panel.tstat]]], actions: true};
+              slice = { label : v.key, data : [[k,v[scope.panel.tstat]]], actions: true};
             }
             scope.data.push(slice);
             k = k + 1;
           });
-
-          scope.data.push({label:'Missing field',
-            data:[[k,scope.results.facets.terms.missing]],meta:"missing",color:'#aaa',opacity:0});
+          //TODO Fix
+          // scope.data.push({label:'Missing field',
+          //   data:[[k,scope.results.facets.terms.missing]],meta:"missing",color:'#aaa',opacity:0});
 
           if(scope.panel.tmode === 'terms') {
             scope.data.push({label:'Other values',
-              data:[[k+1,scope.results.facets.terms.other]],meta:"other",color:'#444'});
+              data:[[k+1,scope.results.aggregations.terms.terms.sum_other_doc_count]],meta:"other",color:'#444'});
           }
         }
 
