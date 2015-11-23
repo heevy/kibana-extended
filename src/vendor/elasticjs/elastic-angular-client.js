@@ -106,14 +106,14 @@ angular.module('elasticjs.service', ['elasticsearch'])
     ejs.getAliases = function(indices) {
         return esClient.indices.getAliases({
           index: indices,
-          ignoreUnavailable: true
+          ignore_unavailable: true
         });  
     };
       
     ejs.getMapping = function(indices) {
         return esClient.indices.getMapping({
           index: indices,
-          ignoreUnavailable: true
+          ignore_unavailable: true
         });
     };
       
