@@ -346,23 +346,30 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
           filterSrv.getBoolFilter(filterSrv.ids())
         );
 
-        var facet = $scope.ejs.DateHistogramFacet(q.id);
+        var facet = $scope.ejs.DateHistogramAggregation(q.id);
 
         if($scope.panel.mode === 'count') {
-          facet = facet.field($scope.panel.time_field).global(true);
+          //TODO .global(true) not needed ?
+          facet = facet.field($scope.panel.time_field);
         } else {
           if(_.isNull($scope.panel.value_field)) {
             $scope.panel.error = "In " + $scope.panel.mode + " mode a field must be specified";
             return;
           }
+          //TODO not supported
           facet = facet.keyField($scope.panel.time_field).valueField($scope.panel.value_field).global(true);
         }
-        facet = facet.interval(_interval).facetFilter($scope.ejs.QueryFilter(query));
-        request = request.facet(facet)
+        facet = facet.interval(_interval);
+        request = request.aggregation($scope.ejs.FilterAggregation(q.id)
+            .filter($scope.ejs.QueryFilter(query))
+            .aggregation(
+                facet
+            ))
           .size($scope.panel.annotate.enable ? $scope.panel.annotate.size : 0);
       });
 
       if($scope.panel.annotate.enable) {
+        //TODO not tested
         var query = $scope.ejs.FilteredQuery(
           $scope.ejs.QueryStringQuery($scope.panel.annotate.query || '*'),
           filterSrv.getBoolFilter(filterSrv.idsByType('time'))
@@ -411,7 +418,7 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
             counters; // Stores the bucketed hit counts.
 
           _.each(queries, function(q) {
-            var query_results = results.facets[q.id];
+            var query_results = results.aggregations[q.id][q.id];
             // we need to initialize the data variable on the first run,
             // and when we are working on the first segment of the data.
             if(_.isUndefined(data[i]) || segment === 0) {
@@ -431,15 +438,16 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
             }
 
             // push each entry into the time series, while incrementing counters
-            _.each(query_results.entries, function(entry) {
+            _.each(query_results.buckets, function(entry) {
               var value;
 
-              hits += entry.count; // The series level hits counter
-              $scope.hits += entry.count; // Entire dataset level hits counter
-              counters[entry.time] = (counters[entry.time] || 0) + entry.count;
+              hits += entry.doc_count; // The series level hits counter
+              $scope.hits += entry.doc_count; // Entire dataset level hits counter
+              counters[entry.key] = (counters[entry.key] || 0) + entry.doc_count;
 
               if($scope.panel.mode === 'count') {
-                value = (time_series._data[entry.time] || 0) + entry.count;
+                value = (time_series._data[entry.key] || 0) + entry.doc_count;
+              //TODO anything else than count is not supported
               } else if ($scope.panel.mode === 'mean') {
                 // Compute the ongoing mean by
                 // multiplying the existing mean by the existing hits
@@ -462,7 +470,7 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
               } else if ($scope.panel.mode === 'total'){
                 value = (time_series._data[entry.time] || 0) + entry.total;
               }
-              time_series.addValue(entry.time, value);
+              time_series.addValue(entry.key, value);
             });
 
             $scope.legend[i] = {query:q,hits:hits};
